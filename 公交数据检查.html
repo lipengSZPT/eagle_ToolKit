@@ -1,0 +1,547 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>eagle Toolkit </title>
+    <link href="Scripts/ext-3.4.1/resources/css/ext-all.css" rel="stylesheet" type="text/css" />
+    <link href="Scripts/ext-3.4.1/examples/ux/css/Spinner.css" rel="stylesheet" type="text/css" />
+    <script src="Scripts/ext-3.4.1/adapter/ext/ext-base.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/ext-all.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/src/locale/ext-lang-zh_CN.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/examples/ux/TabCloseMenu.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/examples/ux/RowEditor.js" type="text/javascript">    </script>
+    <link href="Scripts/ext-3.4.1/examples/ux/css/RowEditor.css" rel="stylesheet" type="text/css" />
+    <script src="Scripts/ext-3.4.1/examples/ux/RowExpander.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/examples/ux/Spinner.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/SpinnerField.js" type="text/javascript"></script>
+    <link href="Scripts/ext-3.4.1/examples/ux/treegrid/treegrid.css" rel="stylesheet" type="text/css" />
+    <link href="Scripts/ext-3.4.1/examples/ux/statusbar/css/statusbar.css" rel="stylesheet" />
+    <link href="Scripts/ext-3.4.1/examples/ux/fileuploadfield/css/fileuploadfield.css" rel="stylesheet" />
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGridSorter.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGrid.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGridColumnResizer.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGridColumns.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGridLoader.js" type="text/javascript"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/treegrid/TreeGridNodeUI.js" type="text/javascript"></script>
+    <script src="Scripts/json.js" type="text/javascript">    </script>
+    <script src="Scripts/ext-3.4.1/examples/ux/fileuploadfield/FileUploadField.js"></script>
+    <script src="Scripts/ext-3.4.1/examples/ux/statusbar/StatusBar.js"></script>
+    <script src="Scripts/echarts-2.2.7/build/dist/echarts.js"></script>
+    <style type="text/css">
+        html, body {
+            font: normal 12px verdana;
+            margin: 0;
+            padding: 0;
+            border: 0 none;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .empty .x-panel-body {
+            padding-top: 20px;
+            text-align: center;
+            font-style: italic;
+            color: gray;
+            font-size: 11px;
+        }
+    </style>
+    <script type="text/javascript">
+        var split;
+
+        // Avoid running twice; that would break the `nativeSplit` reference
+        //split = split || function (undef) {
+
+        //    var nativeSplit = String.prototype.split,
+        //        compliantExecNpcg = /()??/.exec("")[1] === undef, // NPCG: nonparticipating capturing group
+        //        self;
+
+        //    self = function (str, separator, limit) {
+        //        // If `separator` is not a regex, use `nativeSplit`
+        //        if (Object.prototype.toString.call(separator) !== "[object RegExp]") {
+        //            return nativeSplit.call(str, separator, limit);
+        //        }
+        //        var output = [],
+        //            flags = (separator.ignoreCase ? "i" : "") +
+        //                    (separator.multiline ? "m" : "") +
+        //                    (separator.extended ? "x" : "") + // Proposed for ES6
+        //                    (separator.sticky ? "y" : ""), // Firefox 3+
+        //            lastLastIndex = 0,
+        //            // Make `global` and avoid `lastIndex` issues by working with a copy
+        //            separator = new RegExp(separator.source, flags + "g"),
+        //            separator2, match, lastIndex, lastLength;
+        //        str += ""; // Type-convert
+        //        if (!compliantExecNpcg) {
+        //            // Doesn't need flags gy, but they don't hurt
+        //            separator2 = new RegExp("^" + separator.source + "$(?!\\s)", flags);
+        //        }
+        //        /* Values for `limit`, per the spec:
+        //         * If undefined: 4294967295 // Math.pow(2, 32) - 1
+        //         * If 0, Infinity, or NaN: 0
+        //         * If positive number: limit = Math.floor(limit); if (limit > 4294967295) limit -= 4294967296;
+        //         * If negative number: 4294967296 - Math.floor(Math.abs(limit))
+        //         * If other: Type-convert, then use the above rules
+        //         */
+        //        limit = limit === undef ?
+        //            -1 >>> 0 : // Math.pow(2, 32) - 1
+        //            limit >>> 0; // ToUint32(limit)
+        //        while (match = separator.exec(str)) {
+        //            // `separator.lastIndex` is not reliable cross-browser
+        //            lastIndex = match.index + match[0].length;
+        //            if (lastIndex > lastLastIndex) {
+        //                output.push(str.slice(lastLastIndex, match.index));
+        //                // Fix browsers whose `exec` methods don't consistently return `undefined` for
+        //                // nonparticipating capturing groups
+        //                if (!compliantExecNpcg && match.length > 1) {
+        //                    match[0].replace(separator2, function () {
+        //                        for (var i = 1; i < arguments.length - 2; i++) {
+        //                            if (arguments[i] === undef) {
+        //                                match[i] = undef;
+        //                            }
+        //                        }
+        //                    });
+        //                }
+        //                if (match.length > 1 && match.index < str.length) {
+        //                    Array.prototype.push.apply(output, match.slice(1));
+        //                }
+        //                lastLength = match[0].length;
+        //                lastLastIndex = lastIndex;
+        //                if (output.length >= limit) {
+        //                    break;
+        //                }
+        //            }
+        //            if (separator.lastIndex === match.index) {
+        //                separator.lastIndex++; // Avoid an infinite loop
+        //            }
+        //        }
+        //        if (lastLastIndex === str.length) {
+        //            if (lastLength || !separator.test("")) {
+        //                output.push("");
+        //            }
+        //        } else {
+        //            output.push(str.slice(lastLastIndex));
+        //        }
+        //        return output.length > limit ? output.slice(0, limit) : output;
+        //    };
+
+        //    // For convenience
+        //    String.prototype.split = function (separator, limit) {
+        //        return self(this, separator, limit);
+        //    };
+
+        //    return self;
+
+        //}();
+        require.config({
+            paths: {
+                echarts: 'Scripts/echarts-2.2.7/build/dist'
+            }
+        });
+        Ext.onReady(function () {
+            var aWeek = ['星期天', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            var clock = new Ext.Toolbar.TextItem(new Date().format('Y-m-d G:i:s A') + '  ' + aWeek[new Date().getDay()]);  //定期更新时间
+            Ext.TaskMgr.start({
+                run: function () {
+                    Ext.fly(clock.getEl()).update(new Date().format('Y年m月d日   G:i:s A') + '  ' + aWeek[new Date().getDay()]);
+                },
+                interval: 1000
+            });
+            var south = {
+                region: 'south',
+                height: 32,
+                xtype: 'toolbar',
+                //autoEl: {
+                //    tag: 'div',
+                //    html: '<p>———寅源公司ERP管理系统———</p>'
+                //},
+                items: ['->', '>>>>>>', clock, '<<<<<<']
+            };
+            var north = {
+                id: 'north_toolbar',
+                xtype: 'toolbar',
+                region: 'north',
+                height: 30,
+                items: [
+                    '<p>>>>>>>eagle Toolkit >>>>>>>developed by Peng Lee>>>>>>>CopyRight ©  lp_eagle@163.com>>>>>>></p>'
+
+                ]
+            };
+            var root = new Ext.tree.TreeNode({
+                text: 'ToolKit',
+                expanded: true
+            });
+            var west = new Ext.tree.TreePanel({
+                title: 'TreePanel',
+                autoScroll: true,
+                enableDD: true,
+                region: 'west',
+                id: 'west-panel',
+                title: '部门',
+                split: true,
+                width: 200,
+                minSize: 175,
+                maxSize: 400,
+                collapsible: true,
+                margins: '0 0 0 5',
+                root: root
+            });
+            var center = new Ext.TabPanel({
+                id: "center",
+                region: 'center',
+                deferredRender: false,
+                activeTab: 0,
+
+                items: [],
+                resizeTabs: true,
+                // turn on tab resizing
+                enableTabScroll: true,
+
+                defaults: {
+                    autoScroll: true
+                },
+                plugins: new Ext.ux.TabCloseMenu()
+            })
+            var viewport = new Ext.Viewport({
+                layout: 'border',
+                items: [north, west, south, center]
+            });
+            function excel2array(input, r) {
+                var res_rows = input.split('\n');
+                var tempDataTable = [];
+                var tempDataTableR = [];
+
+                var orders = [];
+                var tempinput = res_rows[0].split('\t');
+
+                for (var i = 0; i < res_rows.length; i++) {
+                    var ansDataRow = [];
+                    var res_rows_cols = res_rows[i].split('\t');
+                    for (var j = 0; j < res_rows_cols.length; j++) {
+                        ansDataRow[j] = res_rows_cols[j];
+                    }
+                    tempDataTable.push(ansDataRow);
+                }
+                if (r == 1) {
+                    for (var j = 0; j < tempDataTable[0].length; j++) {
+                        var ansDataRowR = [];
+
+                        for (var i = 0; i < tempDataTable.length; i++) {
+                            ansDataRowR.push(tempDataTable[i][j]);
+
+                        }
+                        tempDataTableR.push(ansDataRowR);
+                    }
+                    return tempDataTableR
+                }
+                else {
+                    return tempDataTable
+                }
+
+            }
+            function secondOfDay(time) {
+                var hms = String(time).split(':');
+                var hour = hms[0];
+                var minute = hms[1];
+
+                var second = hms[2];
+                //alert(hour);
+                var ans = parseInt(hour * 60 * 60) + parseInt(minute * 60) + parseInt(second);
+                //alert(ans);
+
+                return ans;
+            }
+            function secondOfDayToTime(time) {
+                var minuteOfday = Math.floor(parseInt(time) / 60);
+                var second = (time - minuteOfday * 60);
+                var hourofday = Math.floor(minuteOfday / 60);
+                var minute = (minuteOfday - hourofday * 60);
+                if (String(hourofday).length < 2) {
+                    hourofday = "0" + String(hourofday);
+                }
+                if (String(minute).length < 2) {
+                    minute = "0" +String( minute);
+
+                }
+                if (String(second).length < 2) {
+                    second = "0" + String(second);
+
+                }
+                //alert(hourofday + ": " + minute + ":" + second );
+
+                return hourofday + ": " + minute + ":" + second;
+            }
+            var west_公交数据检查 = new Ext.tree.TreeNode({
+                text: '公交数据检查',
+                id: '公交数据检查',
+                expanded: true,
+                listeners: {
+                    'click': function () {
+                        if (!Ext.getCmp('公交数据检查')) {
+                            center.add({
+                                id: '公交数据检查_tab',
+                                title: '公交数据检查_tab',
+                                layout: 'anchor',
+                                anchor: '100% 100%',
+                                closable: true,
+
+
+                                items: [
+                                        {
+                                            xtype: "fieldset",
+                                            title: "数据",
+                                            layout: "table",
+                                            anchor: "100%", layoutConfig: {
+                                                columns: 2
+                                            },
+                                            items: [{ xtype: "textarea", anchor: "100%", height: 300, width: 300, id: "企业上报数据" },
+                                                { xtype: "textarea", anchor: "100%", height: 300, width: 300, id: "定位导出数据" }
+                                            //    ,
+                                            //    { xtype: "textarea" },
+                                            //{ xtype: "textarea" }
+                                            ]
+                                        },
+
+                                        {
+                                            xtype: "button",
+                                            text: "显示图表",
+                                            anchor: "100%",
+                                            scale: "large",
+                                            id: '公交数据检查_tab' + "testechart",
+                                            listeners: {
+                                                "click": function () {
+                                                    var res = Ext.getCmp("企业上报数据").getValue().trim();
+                                                    //alert(res);
+                                                    var arrayTableqiye = excel2array(res, 0);
+                                                    var arrayTableqiyeR = excel2array(res, 1);
+                                                    var res0 = Ext.getCmp("定位导出数据").getValue().trim();
+
+                                                    var arrayTableGPS = excel2array(res0, 0);
+                                                    var arrayTableGPSR = excel2array(res0, 1);
+                                                    var qiyecount = arrayTableqiyeR[0].length;
+                                                    var GPScount = arrayTableGPSR[0].length;
+                                                    if (qiyecount > GPScount) {
+                                                        alert("定位导出数据缺失" + (GPScount - qiyecount) + "个车次");
+                                                    }
+                                                    listqiye = [];
+                                                    for (var i = 0; i < arrayTableqiyeR[0].length; i++) {
+                                                        listqiye.push(secondOfDay(String(arrayTableqiyeR[8][i])));
+                                                        listqiye.push(secondOfDay(String(arrayTableqiyeR[9][i])));
+                                                    }
+                                                    //listqiye = arrayTableqiyeR[0];
+
+                                                    //alert(res);
+
+
+                                                    //listGPS = arrayTableGPSR[1];
+                                                    // list = arrayTableGPSR[4];
+                                                    listGPS = [];
+                                                    list = [];
+                                                    //alert(arrayTableqiyeR[0].length)
+                                                    for (var i = 0; i < arrayTableGPSR[0].length; i++) {
+                                                        //alert(arrayTableGPSR[9][i])
+
+                                                        listGPS.push(secondOfDay(String(arrayTableGPSR[9][i]).split(' ')[1]));
+                                                        listGPS.push(secondOfDay(String(arrayTableGPSR[11][i]).split(' ')[1]));
+                                                        list.push("发车");
+                                                        list.push("到站");
+                                                    }
+                                                    //alert(listqiye);
+                                                    //alert(arrayTableGPSR.length);
+                                                    require(
+                                                        [
+                                                            'echarts',
+                                                            'echarts/chart/bar', // 使用柱状图就加载bar模块，按需加载
+                                                            'echarts/chart/chord',
+                                                            'echarts/chart/eventRiver',
+                                                            'echarts/chart/force',
+                                                            'echarts/chart/funnel',
+                                                            'echarts/chart/gauge',
+                                                            'echarts/chart/heatmap',
+                                                            'echarts/chart/k',
+                                                            'echarts/chart/line',
+                                                            'echarts/chart/map',
+                                                            'echarts/chart/pie',
+                                                            'echarts/chart/radar',
+                                                            'echarts/chart/scatter',
+                                                            'echarts/chart/tree',
+                                                            'echarts/chart/treemap',
+                                                            'echarts/chart/venn',
+                                                            'echarts/chart/wordCloud'
+                                                        ],
+                                                    function (ec) {
+
+                                                        var myChart = ec.init(document.getElementById('shengguanzhongxin_div'));
+
+                                                        option = {
+                                                            title: {
+                                                                text: '公交数据检查',
+                                                                subtext: 'CopyRight© lp_eagle@163.com'
+                                                            },
+                                                            tooltip: {
+                                                                trigger: 'axis'
+                                                            },
+                                                            legend: {
+                                                                data: ['企业上报数据', '定位导出数据']
+                                                            },
+                                                            toolbox: {
+                                                                show: true,
+                                                                feature: {
+                                                                    mark: { show: true },
+                                                                    dataView: { show: true, readOnly: false },
+                                                                    magicType: { show: true, type: ['line', 'bar'] },
+                                                                    restore: { show: true },
+                                                                    saveAsImage: { show: true }
+                                                                }
+                                                            },
+                                                            calculable: true,
+                                                            yAxis: [
+                                                                {
+                                                                    type: 'category',
+                                                                    boundaryGap: false,
+                                                                    data: list
+                                                                }
+                                                            ],
+                                                            xAxis: [
+                                                                {
+                                                                    type: 'value',
+                                                                    axisLabel: {
+                                                                        formatter: function (value) { return Math.floor(value / 60 / 60) }//'{value}'
+                                                                    }
+                                                                }
+                                                            ],
+                                                            tooltip: {
+                                                                trigger: 'axis',
+                                                                //show: true,   //default true
+                                                                showDelay: 0,
+                                                                hideDelay: 50,
+                                                                transitionDuration: 0,
+                                                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                                                borderColor: '#f50',
+                                                                borderRadius: 8,
+                                                                borderWidth: 2,
+                                                                padding: 10,    // [5, 10, 15, 20]
+                                                                position: function (p) {
+                                                                    // 位置回调
+                                                                    // console.log && console.log(p);
+                                                                    return [p[0] + 10, p[1] - 10];
+                                                                },
+                                                                textStyle: {
+                                                                    color: 'white',
+                                                                    decoration: 'none',
+                                                                    fontFamily: 'Verdana, sans-serif',
+                                                                    fontSize: 15,
+                                                                    fontStyle: 'italic',
+                                                                    fontWeight: 'bold'
+                                                                },
+                                                                formatter: function (params, ticket, callback) {
+                                                                    //alert();
+                                                                    console.log(params)
+                                                                    var res = params[0].name;
+                                                                    for (var i = 0, l = params.length; i < l; i++) {
+                                                                        res += '<br/>' + params[i].seriesName + ' : ' + secondOfDayToTime(params[i].value);
+                                                                    }
+
+                                                                    return res;
+                                                                }
+                                                            },
+                                                            series: [
+                                                                {
+                                                                    name: '企业上报数据',
+                                                                    type: 'line',
+                                                                    data: listqiye,
+                                                                    //markPoint: {
+                                                                    //    data: [
+                                                                    //        { type: 'max', name: '最大值' },
+                                                                    //        { type: 'min', name: '最小值' }
+                                                                    //    ]
+                                                                    //},
+                                                                    //markLine: {
+                                                                    //    data: [
+                                                                    //        { type: 'average', name: '平均值' }
+                                                                    //    ]
+                                                                    //}
+                                                                },
+                                                                {
+                                                                    name: '定位导出数据',
+                                                                    type: 'line',
+                                                                    data: listGPS,
+                                                                    //markPoint: {
+                                                                    //    data: [
+                                                                    //        { name: '周最低', value: -2, xAxis: 1, yAxis: -1.5 }
+                                                                    //    ]
+                                                                    //},
+                                                                    //markLine: {
+                                                                    //    data: [
+                                                                    //        { type: 'average', name: '平均值' }
+                                                                    //    ]
+                                                                    //}
+                                                                }
+                                                            ]
+                                                        };
+
+
+                                                        // 为echarts对象加载数据
+                                                        myChart.setOption(option);
+                                                    }
+                );
+                                                }
+                                            }
+
+                                        },
+                                {
+                                    xtype: 'panel',
+                                    title: "项目进度",
+                                    contentEl: 'shengguanzhongxin_div',
+                                    autoScroll: true,
+                                    archor: "-100 -100"
+                                }]
+                            }).show();
+
+                        }
+                        else {
+                            Ext.getCmp('公交数据检查').show();
+                        }
+                    }
+                }
+            });
+            west_公交数据检查.fireEvent("click");
+            root.appendChild(west_公交数据检查);
+        });
+    </script>
+</head>
+<body runat="server">
+    <!-- use class="x-hide-display" to prevent a brief flicker of the content
+        -->
+    <script type="text/javascript">
+    </script>
+    <div id="west" class="x-hide-display">
+        <p>
+            west
+        </p>
+        <input id="Text1" type="text" />
+        <input id="Text2" type="text" />
+        <input id="Button2" type="button" value="登陆" onclick="login()" />
+        <input id="Button3" type="button" value="登陆验证" onclick="return checklog()" />
+    </div>
+    <div id="shengguanzhongxin_div" class="x-hide-display" style="height:400px">
+
+    </div>
+    <div id="center2" class="x-hide-display">
+        <a id="hideit" href="#">Toggle the west region </a><a href="Services/WebForm1.aspx">
+            Services/WebForm1.aspx?key=哈哈
+        </a><a href="Services/WebService1.asmx">
+            Services/WebService1.asmx/HelloWorld
+        </a>center2
+    </div>
+    <div id="center1" class="x-hide-display" runat="server">
+        欢迎使用
+    </div>
+    <div id="props-panel" class="x-hide-display" style="width: 200px; height: 200px;
+        overflow: hidden;">
+    </div>
+    <div id="south" class="x-hide-display" runat="server">
+        <form id="form1" runat="server"></form>
+        <p>
+            south
+        </p>
+    </div>
+</body>
+</html>
