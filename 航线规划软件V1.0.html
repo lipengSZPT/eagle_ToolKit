@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb213" />
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+body, html{width: 100%;height: 100%;overflow: hidden;margin:0;}
+#allmap {margin-right: 300px;height: 100%;overflow: hidden;}
+#result {border-left:1px dotted #999;height:100%;width:295px;position:absolute;top:0px;right:0px;font-size:12px;}
+dl,dt,dd,ul,li{
+    margin:0;
+    padding:0;
+    list-style:none;
+}
+p{font-size:12px;}
+dt{
+    font-size:14px;
+    font-family:"微软雅黑";
+    font-weight:bold;
+    border-bottom:1px dotted #000;
+    padding:5px 0 5px 5px;
+    margin:5px 0;
+}
+dd{
+    padding:5px 0 0 5px;
+}
+li{
+    line-height:28px;
+}
+</style>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=wYNDpo4DCE9CJgt5BGv2AehXiZLAkdF7"></script>
+<!--加载鼠标绘制工具-->
+<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+<!--加载检索信息窗口-->
+<script type="text/javascript" src="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.js"></script>
+<link rel="stylesheet" href="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.css" />
+
+<title>航线管理工具</title>
+</head>
+<body>
+<div id="allmap" style="overflow:hidden;zoom:1;position:relative;">	
+    <div id="map" style="height:100%;-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;"></div>
+    <div id="showPanelBtn" style="position:absolute;font-size:14px;top:50%;margin-top:-95px;right:0px;width:20px;padding:10px 10px;color:#999;cursor:pointer;text-align:center;height:170px;background:rgba(255,255,255,0.9);-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;font-family:'微软雅黑';font-weight:bold;">显示检索结果面板<br/>&lt;</div>
+    <div id="panelWrap" style="width:0px;position:absolute;top:0px;right:0px;height:100%;overflow:auto;-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;">
+        <div style="width:20px;height:200px;margin:-100px 0 0 -10px;color:#999;position:absolute;opacity:0.5;top:50%;left:50%;" id="showOverlayInfo">此处用于展示覆盖物信息</div>
+        <div id="panel" style="position:absolute;"></div>
+    </div>
+</div>
+
+<div id="result">
+    <dl>
+    	<dt>绘制工具功能</dt>
+            <ul>
+                <li><label><input type="radio" name="openClose1" onclick="drawingManager.open()"/>打开</label>  <label><input type="radio" name="openClose1" onclick="drawingManager.close()" checked="checked"/>关闭</label></li>
+            </ul>
+        </dd>
+    	<dt>是否进行线或面积的计算(单位米)</dt>
+            <ul>
+                <li><label><input type="radio" name="openClose" onclick="drawingManager.enableCalculate()"/>打开</label>  <label><input type="radio" name="openClose" onclick="drawingManager.disableCalculate()"  checked="checked"/>关闭</label></li>
+            </ul>
+        </dd>
+
+    	<dt>覆盖物操作</dt>
+<dd>
+    <ul>
+        <li>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input type="button" value="获取绘制的覆盖物个数" onclick="alert(overlays.length)" />
+                <input type="button" value="清除所有覆盖物" onclick="clearAll()" />
+                <input type="button" value="获取最后一个覆盖物信息" id="getLastOverLay" />
+                <input type="button" value="渔网" onclick="eagle_net()" />
+                <input type="button" value="保存" onclick="eagle_save()" />
+                <input type="button" value="蛇形航线" onclick="eagle_snake()" />
+                <textarea id="TextArea1" cols="30" rows="8"></textarea>
+            </div>
+        </li>
+    </ul>
+</dd>
+    </dl>
+
+</div>
+
+<script type="text/javascript">
+
+    var map = new BMap.Map('map');
+    var poi = new BMap.Point(113.430087, 22.913125);
+    map.centerAndZoom(poi, 12);
+    map.enableScrollWheelZoom();
+
+    $("getLastOverLay").onclick = function(){
+        if(overlays.length){
+            console.log(overlays[overlays.length - 1]);
+            console.log(overlays[overlays.length - 1].getPath());
+			path=overlays[overlays.length - 1].getPath();
+			console.log(path);
+			for(var i = 0; i < path.length; i++){
+            console.log(path[i].lat);
+            console.log(path[i].lng);
+        }
+        }else{
+            alert("没有覆盖物");
+        }
+    }
+
+    //信息窗口的内容定义
+    var content = '<div style="margin:0;line-height:20px;padding:2px;">' +
+                    '地址：北京市海淀区上地十街10号<br/>电话：(010)59928888<br/>简介：百度大厦位于北京市海淀区西二旗地铁站附近，为百度公司综合研发及办公总部。' +
+                  '</div>';
+    
+    //创建带信息窗口的poi点
+    var searchInfoWindow = new BMapLib.SearchInfoWindow(map, content, {
+        title  : "百度大厦",      //标题
+        width  : 290,             //宽度
+        height : 105,              //高度
+        panel  : "panel",         //检索结果面板
+        enableAutoPan : true,     //自动平移
+        searchTypes   :[
+            BMAPLIB_TAB_SEARCH,   //周边检索
+            BMAPLIB_TAB_TO_HERE,  //到这里去
+            BMAPLIB_TAB_FROM_HERE //从这里出发
+        ]
+    });    
+    
+    var overlays = [];
+    //回调获得覆盖物信息
+    var overlaycomplete = function(e){
+        overlays.push(e.overlay);
+        var result = "";
+        result = "<p>";
+        result += e.drawingMode + ":";
+        if (e.drawingMode == BMAP_DRAWING_MARKER) {
+            result += ' 坐标：' + e.overlay.getPosition().lng + ',' + e.overlay.getPosition().lat;
+            if ($('isInfowindow').checked) {
+                searchInfoWindow.open(e.overlay);
+            }
+        }
+        if (e.drawingMode == BMAP_DRAWING_CIRCLE) {
+            result += ' 半径：' + e.overlay.getRadius();
+            result += ' 中心点：' + e.overlay.getCenter().lng + "," + e.overlay.getCenter().lat;
+        }
+        if (e.drawingMode == BMAP_DRAWING_POLYLINE || e.drawingMode == BMAP_DRAWING_POLYGON || e.drawingMode == BMAP_DRAWING_RECTANGLE) {
+            result += ' 所画的点个数：' + e.overlay.getPath().length;
+        }
+        result += "</p>";
+        $("showOverlayInfo").style.display = "none";
+        $("panel").innerHTML += result; //将绘制的覆盖物信息结果输出到结果面板
+    };
+
+    var styleOptions = {
+        strokeColor:"red",    //边线颜色。
+        fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
+        strokeWeight: 3,       //边线的宽度，以像素为单位。
+        strokeOpacity: 0.8,	   //边线透明度，取值范围0 - 1。
+        fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+        strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+    //实例化鼠标绘制工具
+    var drawingManager = new BMapLib.DrawingManager(map, {
+        isOpen: false, //是否开启绘制模式
+        enableDrawingTool: true, //是否显示工具栏
+        drawingToolOptions: {
+            anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+            offset: new BMap.Size(5, 5), //偏离值
+            scale: 0.8 //工具栏缩放比例
+        },
+        circleOptions: styleOptions, //圆的样式
+        polylineOptions: styleOptions, //线的样式
+        polygonOptions: styleOptions, //多边形的样式
+        rectangleOptions: styleOptions //矩形的样式
+    });
+
+    
+    //添加鼠标绘制工具监听事件，用于获取绘制结果
+    drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+    
+
+    function $(id){
+        return document.getElementById(id);
+    }
+
+    function clearAll() {
+        for(var i = 0; i < overlays.length; i++){
+            map.removeOverlay(overlays[i]);
+        }
+        overlays.length = 0
+    }
+
+    var isPanelShow = false;
+    //显示结果面板动作
+    $("showPanelBtn").onclick = showPanel;
+    function showPanel(){
+        if (isPanelShow == false) {
+            isPanelShow = true;
+            $("showPanelBtn").style.right = "230px";
+            $("panelWrap").style.width = "230px";
+            $("map").style.marginRight = "230px";
+            $("showPanelBtn").innerHTML = "隐藏绘制结果信息<br/>>";
+        } else {
+            isPanelShow = false;
+            $("showPanelBtn").style.right = "0px";
+            $("panelWrap").style.width = "0px";
+            $("map").style.marginRight = "0px";
+            $("showPanelBtn").innerHTML = "显示绘制结果信息<br/><";
+        }
+    }
+
+	
+	function eagle_save()
+	{
+	    for(var i = 0; i < overlays.length; i++){
+	           var temp_eagle=overlays[i].getPath();
+			   document.getElementById("TextArea1").value+="<obj>\n";
+			   document.getElementById("TextArea1").value+="<id>"+i+"</id>\n";
+			   document.getElementById("TextArea1").value+="<name>第"+i+"路</name>\n";
+			   document.getElementById("TextArea1").value+="<condition>0</condition>\n";
+			   document.getElementById("TextArea1").value+="<coordinates>"
+			   document.getElementById("TextArea1").value+=temp_eagle[0].lng+","+temp_eagle[0].lat+",0";
+			   for(var j = 1; j < temp_eagle.length; j++){
+                
+				 document.getElementById("TextArea1").value+=" "+temp_eagle[j].lng+","+temp_eagle[j].lat+",0";
+				
+                }
+				
+               document.getElementById("TextArea1").value+="</coordinates>\n"
+               document.getElementById("TextArea1").value+="</obj>\n";
+        }
+        
+	}
+
+	function eagle_net()
+	{
+
+		path=overlays[overlays.length - 1].getPath();
+
+
+		
+
+	
+				/* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+		const RAD = Math.PI / 180;
+		const R   = 6378137;
+
+		function lngLatToM(lng, lat) {
+		  const x = R * lng * RAD;
+		  const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+		  return [x, y];
+		}
+
+		function mToLngLat(mx, my) {
+		  const lng = (mx / R) / RAD;
+		  const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+		  return [lng, lat];
+		}
+
+		/* ---------- 主函数 ---------- */
+		function splitGrid() {
+		  // 读取四角		
+		pts=[]
+		for(var i = 0; i < path.length; i++){
+			console.log(path[i].lat);
+			console.log(path[i].lng);
+			temp=[path[i].lng,path[i].lat]
+			pts.push(temp)
+		}
+
+
+		console.log(pts)
+
+		  // 转米制坐标
+		  const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+		  const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+		  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+		  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+
+		  const step = 500; // 500 m
+		  const grids = [];
+
+		  for (let x = minX; x < maxX - 1e-6; x += step) {
+			for (let y = minY; y < maxY - 1e-6; y += step) {
+			  const x2 = Math.min(x + step, maxX);
+			  const y2 = Math.min(y + step, maxY);
+
+			  const sw = mToLngLat(x,  y);   // 左下
+			  const se = mToLngLat(x2, y);   // 右下
+			  const ne = mToLngLat(x2, y2);  // 右上
+			  const nw = mToLngLat(x,  y2);  // 左上
+
+			  grids.push({
+				id: grids.length + 1,
+				corners: [nw, ne, se, sw]  // 顺时针
+			  });
+			}
+		  }
+		console.log(grids)
+		  // 输出
+		  //document.getElementById('result').value = JSON.stringify(grids, null, 2);
+		for(var i = 0; i < grids.length; i++){
+           console.log(grids[i]['corners'][0])
+           console.log(grids[i]['corners'][1])
+           console.log(grids[i]['corners'][2])
+           console.log(grids[i]['corners'][3])
+			var nw=new BMap.Point(grids[i]['corners'][0][0],grids[i]['corners'][0][1]),
+				ne=new BMap.Point(grids[i]['corners'][1][0],grids[i]['corners'][1][1]),
+				se=new BMap.Point(grids[i]['corners'][2][0],grids[i]['corners'][2][1]),
+				sw=new BMap.Point(grids[i]['corners'][3][0],grids[i]['corners'][3][1]);
+			var points =[nw, ne, se, sw];
+		
+			var curve = new BMap.Polygon(points, {strokeColor:"blue", strokeWeight:3, strokeOpacity:0.5}); //创建弧线对象
+			
+			curve.addEventListener("click", function(e){    
+		eagle_snake_click(this);   
+		console.log(this)
+		
+	})
+			map.addOverlay(curve); //添加到地图中
+			overlays.push(curve)
+		
+        }
+		}
+		splitGrid() ;
+		drawingManager.close()
+	}
+function eagle_snake_click(e)
+	{
+		console.log(e)
+		path=e.getPath();	
+				/* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+		const RAD = Math.PI / 180;
+		const R   = 6378137;
+
+		function lngLatToM(lng, lat) {
+		  const x = R * lng * RAD;
+		  const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+		  return [x, y];
+		}
+
+		function mToLngLat(mx, my) {
+		  const lng = (mx / R) / RAD;
+		  const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+		  return [lng, lat];
+		}
+
+		/* ---------- 主函数 ---------- */
+	function buildSnakeRoute() {
+  /* 1. 读取四角 */
+		pts=[]
+		for(var i = 0; i < path.length; i++){
+
+			temp=[path[i].lng,path[i].lat]
+			pts.push(temp)
+		}
+
+  const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+  const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+
+  const step = 10; // 航线间距
+  const width  = maxX - minX;
+  const height = maxY - minY;
+
+  /* 判断长边：沿长边往返，短边步进 */
+  const alongX = width >= height;
+  const longLen  = alongX ? width  : height;
+  const shortLen = alongX ? height : width;
+
+  /* ---------- 2. 计算短边方向(步进方向)的线 ---------- */
+  const shortLines = [];
+  for (let s = 0; s <= shortLen + 1e-6; s += step) {
+    shortLines.push(Math.min(s, shortLen));
+  }
+  if (shortLines[shortLines.length - 1] < shortLen - 1e-6) {
+    shortLines.push(shortLen); // 强制补到最后一条边界
+  }
+
+  /* ---------- 3. 计算长边方向(往返方向)的点 ---------- */
+  const longPoints = [];
+  for (let l = 0; l <= longLen + 1e-6; l += step) {
+    longPoints.push(Math.min(l, longLen));
+  }
+  if (longPoints[longPoints.length - 1] < longLen - 1e-6) {
+    longPoints.push(longLen);
+  }
+
+  /* ---------- 4. 蛇形遍历 ---------- */
+  const route = [];
+  shortLines.forEach((s, idx) => {
+    const forward = idx % 2 === 0;
+    const iter = forward ? longPoints : longPoints.slice().reverse();
+    iter.forEach(l => {
+      const x = alongX ? (minX + l) : (minX + s);
+      const y = alongX ? (minY + s) : (minY + l);
+      const [lng, lat] = mToLngLat(x, y);
+	  route.push(new BMap.Point(lng,lat));
+      //route.push([lng, lat]);
+    });
+  });
+console.log('route')
+console.log(route)
+	  /* 3. 输出 */
+	  //document.getElementById('result').value = JSON.stringify(route, null, 2);
+		var curve = new BMap.Polyline(route, {strokeColor:"yellow", strokeWeight:3, strokeOpacity:0.5});
+		map.addOverlay(curve); //添加到地图中
+		overlays.push(curve)
+	}
+	buildSnakeRoute()        
+	}
+
+function eagle_snake()
+	{
+
+		path=overlays[overlays.length - 1].getPath();	
+				/* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+		const RAD = Math.PI / 180;
+		const R   = 6378137;
+
+		function lngLatToM(lng, lat) {
+		  const x = R * lng * RAD;
+		  const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+		  return [x, y];
+		}
+
+		function mToLngLat(mx, my) {
+		  const lng = (mx / R) / RAD;
+		  const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+		  return [lng, lat];
+		}
+
+		/* ---------- 主函数 ---------- */
+	function buildSnakeRoute() {
+  /* 1. 读取四角 */
+		pts=[]
+		for(var i = 0; i < path.length; i++){
+
+			temp=[path[i].lng,path[i].lat]
+			pts.push(temp)
+		}
+
+  const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+  const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+  const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+  const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+
+  const step = 10; // 航线间距
+  const width  = maxX - minX;
+  const height = maxY - minY;
+
+  /* 判断长边：沿长边往返，短边步进 */
+  const alongX = width >= height;
+  const longLen  = alongX ? width  : height;
+  const shortLen = alongX ? height : width;
+
+  /* ---------- 2. 计算短边方向(步进方向)的线 ---------- */
+  const shortLines = [];
+  for (let s = 0; s <= shortLen + 1e-6; s += step) {
+    shortLines.push(Math.min(s, shortLen));
+  }
+  if (shortLines[shortLines.length - 1] < shortLen - 1e-6) {
+    shortLines.push(shortLen); // 强制补到最后一条边界
+  }
+
+  /* ---------- 3. 计算长边方向(往返方向)的点 ---------- */
+  const longPoints = [];
+  for (let l = 0; l <= longLen + 1e-6; l += step) {
+    longPoints.push(Math.min(l, longLen));
+  }
+  if (longPoints[longPoints.length - 1] < longLen - 1e-6) {
+    longPoints.push(longLen);
+  }
+
+  /* ---------- 4. 蛇形遍历 ---------- */
+  const route = [];
+  shortLines.forEach((s, idx) => {
+    const forward = idx % 2 === 0;
+    const iter = forward ? longPoints : longPoints.slice().reverse();
+    iter.forEach(l => {
+      const x = alongX ? (minX + l) : (minX + s);
+      const y = alongX ? (minY + s) : (minY + l);
+      const [lng, lat] = mToLngLat(x, y);
+	  route.push(new BMap.Point(lng,lat));
+      //route.push([lng, lat]);
+    });
+  });
+console.log('route')
+console.log(route)
+	  /* 3. 输出 */
+	  //document.getElementById('result').value = JSON.stringify(route, null, 2);
+		var curve = new BMap.Polyline(route, {strokeColor:"yellow", strokeWeight:3, strokeOpacity:0.5});
+		map.addOverlay(curve); //添加到地图中
+		overlays.push(curve)
+	}
+	buildSnakeRoute()        
+	}
+
+</script>
+
+</body>
+</html>
+</script>
