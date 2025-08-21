@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=gb213" />
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+  <style type="text/css">
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+      width: 100%
+    }
+
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+    }
+
+    #allmap {
+      margin-right: 300px;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #result {
+      border-left: 1px dotted #999;
+      height: 100%;
+      width: 295px;
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      font-size: 12px;
+    }
+
+    dl,
+    dt,
+    dd,
+    ul,
+    li {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    p {
+      font-size: 12px;
+    }
+
+    dt {
+      font-size: 14px;
+      font-family: "微软雅黑";
+      font-weight: bold;
+      border-bottom: 1px dotted #000;
+      padding: 5px 0 5px 5px;
+      margin: 5px 0;
+    }
+
+    dd {
+      padding: 5px 0 0 5px;
+    }
+
+    li {
+      line-height: 28px;
+    }
+  </style>
+  <script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=wYNDpo4DCE9CJgt5BGv2AehXiZLAkdF7"></script>
+  <!--加载鼠标绘制工具-->
+  <script type="text/javascript"
+    src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+  <link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+  <!--加载检索信息窗口-->
+  <script type="text/javascript"
+    src="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.js"></script>
+  <link rel="stylesheet" href="http://api.map.baidu.com/library/SearchInfoWindow/1.4/src/SearchInfoWindow_min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <title>航线管理工具</title>
+</head>
+
+<body>
+  <div id="allmap" style="overflow:hidden;zoom:1;position:relative;">
+    <div id="map" style="height:100%;-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;"></div>
+    <div id="showPanelBtn"
+      style="position:absolute;font-size:14px;top:50%;margin-top:-95px;right:0px;width:20px;padding:10px 10px;color:#999;cursor:pointer;text-align:center;height:170px;background:rgba(255,255,255,0.9);-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;font-family:'微软雅黑';font-weight:bold;">
+      显示检索结果面板<br />&lt;</div>
+    <div id="panelWrap"
+      style="width:0px;position:absolute;top:0px;right:0px;height:100%;overflow:auto;-webkit-transition: all 0.5s ease-in-out;transition: all 0.5s ease-in-out;">
+      <div
+        style="width:20px;height:200px;margin:-100px 0 0 -10px;color:#999;position:absolute;opacity:0.5;top:50%;left:50%;"
+        id="showOverlayInfo">此处用于展示覆盖物信息</div>
+      <div id="panel" style="position:absolute;"></div>
+    </div>
+  </div>
+  <div id="result">
+    <dl>
+
+
+      <dd>
+        <ul>
+          <li>
+            <div style="display: flex; flex-direction: column; gap: 8px;overflow-y: auto;max-height: 100vh; ">
+              <!-- 原有按钮 -->
+              <dt>基本操作</dt>
+              <label>点击获取现在地图上所有的图形数量：</label>
+              <input type="button" value="获取绘制的图形个数" onclick="alert(overlays.length)" />
+              <label>点击清除地图上所有图形：</label>
+              <input type="button" value="清除所有已绘制图形" onclick="clearAll()" />
+
+
+              <dt>根据飞机数量矩形分割测区</dt>
+              <!-- 新增参数 -->
+              <label>飞机数量（台）:
+                <input type="number" id="planeCount" value="20" min="1" />
+              </label>
+
+              <label>航线间隔（米）:
+                <input type="number" id="routeGap" value="20" min="1" step="1" />
+              </label>
+
+              <label>分区东西向宽度 (米):
+                <input type="number" id="zoneLen" value="500" min="1" />
+              </label>
+
+              <label>分区南北向宽度 (米):
+                <input type="number" id="zoneWid" value="500" min="1" />
+              </label>
+              <label>1.绘制矩形测区。</label>
+              <label>2.点击智能分区参数计算，根据飞机数量计算子分区边长。</label>
+              <input type="button" value="智能分区参数计算" onclick="eagle_fenqu()" />
+              <label>3.手动修正分区边长，点击根据参数执行分区，预览分区结果。</label>
+              <input type="button" value="根据参数执行分区" onclick="eagle_net()" />
+              <label>4.设置航线间隔，点击任意子分区，生成蛇形航线预览。</label>
+              <input type="button" value="生成预览蛇形航线" onclick="eagle_snake()" />
+              <label>5.打包批量下载分区文件。</label>
+              <input type="button" value="批量下载分区文件" onclick="eagle_save()" />
+
+
+              <dt>应急智能分区</dt>
+              <label>单机单块电池可以测绘的面积(平方米):
+                <input type="number" id="danjidankuai" value="200000" min="1" />
+              </label>
+              <label>1.绘制任意多边形形状。</label>
+              <label>2.点击“快速单机单电测区拆分”，进行测区划分预览。</label>
+              <input type="button" value="快速单机单电测区拆分" onclick="eagle_single(0)" />
+              <label>3.点击“批量下载测区分区文件”，进行测区下载。</label>
+              <input type="button" value="批量下载测区分区文件" onclick="eagle_single(1)" />
+
+            </div>
+          </li>
+        </ul>
+      </dd>
+    </dl>
+  </div>
+  <script type="text/javascript">
+    var map = new BMap.Map('map');
+    var poi = new BMap.Point(104.246202, 30.535165);
+    map.centerAndZoom(poi, 17);
+    map.enableScrollWheelZoom();
+    // $("getLastOverLay").onclick = function () {
+    //   if (overlays.length) {
+    //     console.log(overlays[overlays.length - 1]);
+    //     console.log(overlays[overlays.length - 1].getPath());
+    //     path = overlays[overlays.length - 1].getPath();
+    //     console.log(path);
+    //     for (var i = 0; i < path.length; i++) {
+    //       console.log(path[i].lat);
+    //       console.log(path[i].lng);
+    //     }
+    //   } else {
+    //     alert("没有覆盖物");
+    //   }
+    // }
+    //信息窗口的内容定义
+    var content = '<div style="margin:0;line-height:20px;padding:2px;">' +
+      '地址：北京市海淀区上地十街10号<br/>电话：(010)59928888<br/>简介：百度大厦位于北京市海淀区西二旗地铁站附近，为百度公司综合研发及办公总部。' +
+      '</div>';
+    //创建带信息窗口的poi点
+    var searchInfoWindow = new BMapLib.SearchInfoWindow(map, content, {
+      title: "百度大厦",      //标题
+      width: 290,             //宽度
+      height: 105,              //高度
+      panel: "panel",         //检索结果面板
+      enableAutoPan: true,     //自动平移
+      searchTypes: [
+        BMAPLIB_TAB_SEARCH,   //周边检索
+        BMAPLIB_TAB_TO_HERE,  //到这里去
+        BMAPLIB_TAB_FROM_HERE //从这里出发
+      ]
+    });
+    var overlays = [];
+    var overlays_org = [];
+    var overlays_split = [];
+    var overlays_hangxian = [];
+    var overlays_split_grid = [];
+
+    //回调获得覆盖物信息
+    var overlaycomplete = function (e) {
+      overlays.push(e.overlay);
+      overlays_org.push(e.overlay);
+      var result = "";
+      result = "<p>";
+      result += e.drawingMode + ":";
+      if (e.drawingMode == BMAP_DRAWING_MARKER) {
+        result += ' 坐标：' + e.overlay.getPosition().lng + ',' + e.overlay.getPosition().lat;
+        if ($('isInfowindow').checked) {
+          searchInfoWindow.open(e.overlay);
+        }
+      }
+      if (e.drawingMode == BMAP_DRAWING_CIRCLE) {
+        result += ' 半径：' + e.overlay.getRadius();
+        result += ' 中心点：' + e.overlay.getCenter().lng + "," + e.overlay.getCenter().lat;
+      }
+      if (e.drawingMode == BMAP_DRAWING_POLYLINE || e.drawingMode == BMAP_DRAWING_POLYGON || e.drawingMode == BMAP_DRAWING_RECTANGLE) {
+        result += ' 所画的点个数：' + e.overlay.getPath().length;
+      }
+      result += "</p>";
+      $("showOverlayInfo").style.display = "none";
+      $("panel").innerHTML += result; //将绘制的覆盖物信息结果输出到结果面板
+    };
+    var styleOptions = {
+      strokeColor: "red",    //边线颜色。
+      fillColor: "red",      //填充颜色。当参数为空时，圆形将没有填充效果。
+      strokeWeight: 3,       //边线的宽度，以像素为单位。
+      strokeOpacity: 0.8,	   //边线透明度，取值范围0 - 1。
+      fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+      strokeStyle: 'solid' //边线的样式，solid或dashed。
+    }
+    //实例化鼠标绘制工具
+    var drawingManager = new BMapLib.DrawingManager(map, {
+      isOpen: false, //是否开启绘制模式
+      enableDrawingTool: true, //是否显示工具栏
+      drawingToolOptions: {
+        anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+        offset: new BMap.Size(5, 5), //偏离值
+        scale: 0.8 //工具栏缩放比例
+      },
+      circleOptions: styleOptions, //圆的样式
+      polylineOptions: styleOptions, //线的样式
+      polygonOptions: styleOptions, //多边形的样式
+      rectangleOptions: styleOptions //矩形的样式
+    });
+    //添加鼠标绘制工具监听事件，用于获取绘制结果
+    drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+    function $(id) {
+      return document.getElementById(id);
+    }
+    function clearAll() {
+      for (var i = 0; i < overlays.length; i++) {
+        map.removeOverlay(overlays[i]);
+      }
+      overlays = [];
+      overlays_org = [];
+      overlays_split = [];
+      overlays_hangxian = [];
+      overlays_split_grid = [];
+      //overlays.length = 0
+    }
+    var isPanelShow = false;
+    //显示结果面板动作
+    $("showPanelBtn").onclick = showPanel;
+    function showPanel() {
+      if (isPanelShow == false) {
+        isPanelShow = true;
+        $("showPanelBtn").style.right = "230px";
+        $("panelWrap").style.width = "230px";
+        $("map").style.marginRight = "230px";
+        $("showPanelBtn").innerHTML = "隐藏绘制结果信息<br/>>";
+      } else {
+        isPanelShow = false;
+        $("showPanelBtn").style.right = "0px";
+        $("panelWrap").style.width = "0px";
+        $("map").style.marginRight = "0px";
+        $("showPanelBtn").innerHTML = "显示绘制结果信息<br/><";
+      }
+    }
+
+    function eagle_net() {
+      path = overlays[overlays.length - 1].getPath();
+      /* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+      const RAD = Math.PI / 180;
+      const R = 6378137;
+      function lngLatToM(lng, lat) {
+        const x = R * lng * RAD;
+        const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+        return [x, y];
+      }
+      function mToLngLat(mx, my) {
+        const lng = (mx / R) / RAD;
+        const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+        return [lng, lat];
+      }
+      /* ---------- 主函数 ---------- */
+      function splitGrid() {
+        // 读取四角		
+        pts = []
+        for (var i = 0; i < path.length; i++) {
+          console.log(path[i].lat);
+          console.log(path[i].lng);
+          temp = [path[i].lng, path[i].lat]
+          pts.push(temp)
+        }
+        console.log(pts)
+        // 转米制坐标
+        const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+        const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+        const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+        const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+        const stepX = +document.getElementById('zoneLen').value;
+        const stepY = +document.getElementById('zoneWid').value;; // 500 m
+        const grids = [];
+        for (let x = minX; x < maxX - 1e-6; x += stepX) {
+          for (let y = minY; y < maxY - 1e-6; y += stepY) {
+            const x2 = Math.min(x + stepX, maxX);
+            const y2 = Math.min(y + stepY, maxY);
+            const sw = mToLngLat(x, y);   // 左下
+            const se = mToLngLat(x2, y);   // 右下
+            const ne = mToLngLat(x2, y2);  // 右上
+            const nw = mToLngLat(x, y2);  // 左上
+            grids.push({
+              id: grids.length + 1,
+              corners: [nw, ne, se, sw]  // 顺时针
+            });
+            overlays_split_grid.push({
+              id: overlays_split_grid.length + 1,
+              corners: [nw, ne, se, sw]  // 顺时针
+            });
+          }
+        }
+        console.log(grids)
+        // 输出
+        //document.getElementById('result').value = JSON.stringify(grids, null, 2);
+        for (var i = 0; i < grids.length; i++) {
+          console.log(grids[i]['corners'][0])
+          console.log(grids[i]['corners'][1])
+          console.log(grids[i]['corners'][2])
+          console.log(grids[i]['corners'][3])
+          var nw = new BMap.Point(grids[i]['corners'][0][0], grids[i]['corners'][0][1]),
+            ne = new BMap.Point(grids[i]['corners'][1][0], grids[i]['corners'][1][1]),
+            se = new BMap.Point(grids[i]['corners'][2][0], grids[i]['corners'][2][1]),
+            sw = new BMap.Point(grids[i]['corners'][3][0], grids[i]['corners'][3][1]);
+          var points = [nw, ne, se, sw];
+          var curve = new BMap.Polygon(points, { strokeColor: "blue", strokeWeight: 3, strokeOpacity: 0.5 }); //创建弧线对象
+          curve.addEventListener("click", function (e) {
+            eagle_snake_click(this);
+            console.log(this)
+          })
+          map.addOverlay(curve); //添加到地图中
+          overlays.push(curve);
+          overlays_split.push(curve);
+        }
+      }
+      splitGrid();
+      drawingManager.close()
+    }
+    function eagle_snake_click(e) {
+      console.log(e)
+      path = e.getPath();
+      /* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+      const RAD = Math.PI / 180;
+      const R = 6378137;
+      function lngLatToM(lng, lat) {
+        const x = R * lng * RAD;
+        const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+        return [x, y];
+      }
+      function mToLngLat(mx, my) {
+        const lng = (mx / R) / RAD;
+        const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+        return [lng, lat];
+      }
+      /* ---------- 主函数 ---------- */
+      function buildSnakeRoute() {
+        /* 1. 读取四角 */
+        pts = []
+        for (var i = 0; i < path.length; i++) {
+          temp = [path[i].lng, path[i].lat]
+          pts.push(temp)
+        }
+        const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+        const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+        const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+        const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+        const step = +document.getElementById('routeGap').value; // 航线间距
+        const width = maxX - minX;
+        const height = maxY - minY;
+        /* 判断长边：沿长边往返，短边步进 */
+        const alongX = width >= height;
+        const longLen = alongX ? width : height;
+        const shortLen = alongX ? height : width;
+        /* ---------- 2. 计算短边方向(步进方向)的线 ---------- */
+        const shortLines = [];
+        for (let s = 0; s <= shortLen + 1e-6; s += step) {
+          shortLines.push(Math.min(s, shortLen));
+        }
+        if (shortLines[shortLines.length - 1] < shortLen - 1e-6) {
+          shortLines.push(shortLen); // 强制补到最后一条边界
+        }
+        /* ---------- 3. 计算长边方向(往返方向)的点 ---------- */
+        const longPoints = [];
+        for (let l = 0; l <= longLen + 1e-6; l += step) {
+          longPoints.push(Math.min(l, longLen));
+        }
+        if (longPoints[longPoints.length - 1] < longLen - 1e-6) {
+          longPoints.push(longLen);
+        }
+        /* ---------- 4. 蛇形遍历 ---------- */
+        const route = [];
+        shortLines.forEach((s, idx) => {
+          const forward = idx % 2 === 0;
+          const iter = forward ? longPoints : longPoints.slice().reverse();
+          iter.forEach(l => {
+            const x = alongX ? (minX + l) : (minX + s);
+            const y = alongX ? (minY + s) : (minY + l);
+            const [lng, lat] = mToLngLat(x, y);
+            route.push(new BMap.Point(lng, lat));
+            //route.push([lng, lat]);
+          });
+        });
+        console.log('route')
+        console.log(route)
+        /* 3. 输出 */
+        //document.getElementById('result').value = JSON.stringify(route, null, 2);
+        var curve = new BMap.Polyline(route, { strokeColor: "yellow", strokeWeight: 3, strokeOpacity: 0.5 });
+        map.addOverlay(curve); //添加到地图中
+        overlays.push(curve)
+      }
+      buildSnakeRoute()
+    }
+    function eagle_snake() {
+      path = overlays[overlays.length - 1].getPath();
+      /* ---------- 工具：经纬度 ↔ Web Mercator ---------- */
+      const RAD = Math.PI / 180;
+      const R = 6378137;
+      function lngLatToM(lng, lat) {
+        const x = R * lng * RAD;
+        const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+        return [x, y];
+      }
+      function mToLngLat(mx, my) {
+        const lng = (mx / R) / RAD;
+        const lat = (2 * Math.atan(Math.exp(my / R)) - Math.PI / 2) / RAD;
+        return [lng, lat];
+      }
+      /* ---------- 主函数 ---------- */
+      function buildSnakeRoute() {
+        /* 1. 读取四角 */
+        pts = []
+        for (var i = 0; i < path.length; i++) {
+          temp = [path[i].lng, path[i].lat]
+          pts.push(temp)
+        }
+        const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+        const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+        const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
+        const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
+        const step = +document.getElementById('routeGap').value;// 航线间距
+        const width = maxX - minX;
+        const height = maxY - minY;
+        /* 判断长边：沿长边往返，短边步进 */
+        const alongX = width >= height;
+        const longLen = alongX ? width : height;
+        const shortLen = alongX ? height : width;
+        /* ---------- 2. 计算短边方向(步进方向)的线 ---------- */
+        const shortLines = [];
+        for (let s = 0; s <= shortLen + 1e-6; s += step) {
+          shortLines.push(Math.min(s, shortLen));
+        }
+        if (shortLines[shortLines.length - 1] < shortLen - 1e-6) {
+          shortLines.push(shortLen); // 强制补到最后一条边界
+        }
+        /* ---------- 3. 计算长边方向(往返方向)的点 ---------- */
+        const longPoints = [];
+        for (let l = 0; l <= longLen + 1e-6; l += step) {
+          longPoints.push(Math.min(l, longLen));
+        }
+        if (longPoints[longPoints.length - 1] < longLen - 1e-6) {
+          longPoints.push(longLen);
+        }
+        /* ---------- 4. 蛇形遍历 ---------- */
+        const route = [];
+        shortLines.forEach((s, idx) => {
+          const forward = idx % 2 === 0;
+          const iter = forward ? longPoints : longPoints.slice().reverse();
+          iter.forEach(l => {
+            const x = alongX ? (minX + l) : (minX + s);
+            const y = alongX ? (minY + s) : (minY + l);
+            const [lng, lat] = mToLngLat(x, y);
+            route.push(new BMap.Point(lng, lat));
+            //route.push([lng, lat]);
+          });
+        });
+        console.log('route')
+        console.log(route)
+        /* 3. 输出 */
+        //document.getElementById('result').value = JSON.stringify(route, null, 2);
+        var curve = new BMap.Polyline(route, { strokeColor: "yellow", strokeWeight: 3, strokeOpacity: 0.5 });
+        map.addOverlay(curve); //添加到地图中
+        overlays.push(curve)
+      }
+      buildSnakeRoute()
+    }
+    function eagle_fenqu() {
+      path = overlays[overlays.length - 1].getPath();
+
+      const RAD = Math.PI / 180;
+      const R = 6378137;
+
+      function lngLatToM(lng, lat) {
+        const x = R * lng * RAD;
+        const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+        return [x, y];
+      }
+
+      function calcSide() {
+        /* 1. 读取四角并转米制坐标 */
+        pts = []
+        for (var i = 0; i < path.length; i++) {
+          temp = [path[i].lng, path[i].lat]
+          pts.push(temp)
+        }
+
+        const mPts = pts.map(p => lngLatToM(p[0], p[1]));
+        const xs = mPts.map(p => p[0]), ys = mPts.map(p => p[1]);
+        const width = Math.max(...xs) - Math.min(...xs);
+        const height = Math.max(...ys) - Math.min(...ys);
+
+        /* 2. 能包住原矩形的最小正方形边长 */
+        const rectSide = Math.max(width, height);
+
+        /* 3. 计算网格 */
+        const N = +document.getElementById('planeCount').value;
+        const maxArea = 200_000;          // ≤ 200 000 m²
+        const maxSide = Math.sqrt(maxArea);
+
+        /* 4. 实际边长：保证总格数 ≥ N 且正方形边长 ≤ maxSide */
+        const cols = Math.ceil(Math.sqrt(N));
+        const gridSide = Math.min(maxSide, rectSide / cols);
+
+        /* 5. 输出 */
+        document.getElementById("zoneLen").value = gridSide.toFixed(2);
+
+        document.getElementById("zoneWid").value = gridSide.toFixed(2);
+        //document.getElementById('num').value = 123;
+        console.log(`单个正方形子区边长（长 = 宽）：${gridSide.toFixed(2)} 米\n` +
+          `子区面积：${(gridSide * gridSide).toFixed(2)} 平方米`);
+
+      }
+      calcSide();
+    }
+    function eagle_save() {
+      let rects = [];
+
+      for (var i = 0; i < overlays_split_grid.length; i++) {
+        console.log(overlays_split_grid[i]['corners'][0])
+        console.log(overlays_split_grid[i]['corners'][1])
+        console.log(overlays_split_grid[i]['corners'][2])
+        console.log(overlays_split_grid[i]['corners'][3])
+        var nw = new BMap.Point(overlays_split_grid[i]['corners'][0][0], overlays_split_grid[i]['corners'][0][1]),
+          ne = new BMap.Point(overlays_split_grid[i]['corners'][1][0], overlays_split_grid[i]['corners'][1][1]),
+          se = new BMap.Point(overlays_split_grid[i]['corners'][2][0], overlays_split_grid[i]['corners'][2][1]),
+          sw = new BMap.Point(overlays_split_grid[i]['corners'][3][0], overlays_split_grid[i]['corners'][3][1]);
+        var points = [nw, ne, se, sw];
+
+        //       const c = [
+        //   [+ltLng.value, +ltLat.value],//nw
+        //   [+rtLng.value, +rtLat.value],//ne
+        //   [+rbLng.value, +rbLat.value],//se
+        //   [+lbLng.value, +lbLat.value]//sw
+        // ];
+        const c = [
+          [overlays_split_grid[i]['corners'][0][0], overlays_split_grid[i]['corners'][0][1]],
+          [overlays_split_grid[i]['corners'][1][0], overlays_split_grid[i]['corners'][1][1]],
+          [overlays_split_grid[i]['corners'][2][0], overlays_split_grid[i]['corners'][2][1]],
+          [overlays_split_grid[i]['corners'][3][0], overlays_split_grid[i]['corners'][3][1]]
+        ]
+        rects.push(c);
+
+
+      }
+      const zip = new JSZip();
+      rects.forEach((corners, idx) => {
+        const coordStr = [...corners, corners[0]] // 闭合
+          .map(p => `${p[0]},${p[1]},0`).join(' ');
+        const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Rectangle ${idx + 1}</name>
+    <Placemark>
+      <name>Rect ${idx + 1}</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${coordStr}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>`;
+        zip.file(`rectangle_${idx + 1}.kml`, kml);
+      });
+      zip.generateAsync({ type: 'blob' }).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rectangles.zip';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    function eagle_single(flag) {
+      /********************************************************************
+ * 工具：经纬度 ↔ Web Mercator
+ ********************************************************************/
+      const RAD = Math.PI / 180, R = 6378137;
+      function lngLatToM([lng, lat]) {
+        const x = R * lng * RAD;
+        const y = R * Math.log(Math.tan((90 + lat) * RAD / 2));
+        return [x, y];
+      }
+      function mToLngLat([x, y]) {
+        const lng = (x / R) / RAD;
+        const lat = (2 * Math.atan(Math.exp(y / R)) - Math.PI / 2) / RAD;
+        return [lng, lat];
+      }
+      function polygonArea(ring) {
+        let area = 0;
+        const n = ring.length;
+        for (let i = 0, j = n - 1; i < n; j = i++)
+          area += ring[i][0] * ring[j][1] - ring[j][0] * ring[i][1];
+        return Math.abs(area) / 2;
+      }
+      function bbox(ring) {
+        let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
+        ring.forEach(([x, y]) => {
+          minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        });
+        return { minX, minY, maxX, maxY };
+      }
+
+      /********************************************************************
+       * 裁剪：矩形带 vs 多边形（Sutherland-Hodgman）
+       ********************************************************************/
+      function clipPolyByBand(poly, band) {
+        const edges = [
+          [[band.xmin, band.ymin], [band.xmin, band.ymax]],
+          [[band.xmin, band.ymax], [band.xmax, band.ymax]],
+          [[band.xmax, band.ymax], [band.xmax, band.ymin]],
+          [[band.xmax, band.ymin], [band.xmin, band.ymin]]
+        ];
+        return edges.reduce((p, e) => sutherlandHodgman(p, e), poly);
+      }
+      function sutherlandHodgman(poly, [s, e]) {
+        const out = [];
+        let prev = poly[poly.length - 1], prevIn = inside(prev, s, e);
+        poly.forEach(cur => {
+          const curIn = inside(cur, s, e);
+          if (curIn) {
+            if (!prevIn) out.push(intersect(prev, cur, s, e));
+            out.push(cur);
+          } else if (prevIn) out.push(intersect(prev, cur, s, e));
+          prev = cur; prevIn = curIn;
+        });
+        return out;
+      }
+      function inside([x, y], [sx, sy], [ex, ey]) {
+        return (ex - sx) * (y - sy) - (ey - sy) * (x - sx) <= 0;
+      }
+      function intersect([x1, y1], [x2, y2], [sx, sy], [ex, ey]) {
+        const denom = (ex - sx) * (y2 - y1) - (ey - sy) * (x2 - x1);
+        if (Math.abs(denom) < 1e-10) return [x1, y1];
+        const ua = ((ey - sy) * (x1 - sx) - (ex - sx) * (y1 - sy)) / denom;
+        return [x1 + ua * (x2 - x1), y1 + ua * (y2 - y1)];
+      }
+
+      /********************************************************************
+       * 递归分割：面积 > A 时继续平分
+       ********************************************************************/
+      let kmlFeatures = [];
+
+      function split(poly, maxA, depth = 0) {
+        const area = polygonArea(poly);
+        if (area <= maxA || depth > 20) { // 深度限制防死循环
+          const coords = poly.map(mToLngLat);
+          const coordStr = [...coords, coords[0]]
+            .map(p => `${p[0]},${p[1]},0`).join(' ');
+          kmlFeatures.push(`
+      <Placemark>
+        <name>Zone_${kmlFeatures.length + 1}</name>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <coordinates>${coordStr}</coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>`);
+          console.log(coords)
+
+          //绘图
+          var points = [];
+          for (var i = 0; i < coords.length; i++) {
+            console.log(coords[i][0])
+            console.log(coords[i][1])
+
+            var p = new BMap.Point(coords[i][0], coords[i][1]);
+            points.push(p);
+
+          }
+          var curve = new BMap.Polygon(points, { strokeColor: "blue", strokeWeight: 3, strokeOpacity: 0.5 }); //创建弧线对象
+          curve.addEventListener("click", function (e) {
+            eagle_snake_click(this);
+            console.log(this)
+          })
+          map.addOverlay(curve); //添加到地图中
+          overlays.push(curve);
+          overlays_split.push(curve);
+          return;
+        }
+
+
+        /* 沿长轴一分为二 */
+        const { minX, minY, maxX, maxY } = bbox(poly);
+        const width = maxX - minX, height = maxY - minY;
+        const vertical = height > width;
+        const mid = vertical
+          ? minY + height / 2
+          : minX + width / 2;
+        const band1 = vertical
+          ? { xmin: minX, xmax: maxX, ymin: minY, ymax: mid }
+          : { xmin: minX, xmax: mid, ymin: minY, ymax: maxY };
+        const band2 = vertical
+          ? { xmin: minX, xmax: maxX, ymin: mid, ymax: maxY }
+          : { xmin: mid, xmax: maxX, ymin: minY, ymax: maxY };
+
+        const sub1 = clipPolyByBand(poly, band1);
+        const sub2 = clipPolyByBand(poly, band2);
+        if (sub1.length) split(sub1, maxA, depth + 1);
+        if (sub2.length) split(sub2, maxA, depth + 1);
+      }
+
+      /********************************************************************
+       * 主入口
+       ********************************************************************/
+      function splitPoly() {
+        // const lines = document.getElementById('polyInput').value.trim().split(/\r?\n/);
+        // const polyLngLat = lines.map(l => l.split(',').map(Number));
+        path = overlays_org[overlays_org.length - 1].getPath();
+        pts = []
+        for (var i = 0; i < path.length; i++) {
+          temp = [path[i].lng, path[i].lat]
+          pts.push(temp)
+        }
+        polyLngLat = pts
+
+
+        if (polyLngLat.length < 3) return alert('至少 3 个顶点！');
+        const poly = polyLngLat.map(lngLatToM);
+        const maxA = document.getElementById("danjidankuai").value;
+        if (maxA <= 0) return alert('面积上限必须 > 0');
+
+        kmlFeatures = [];
+        split(poly, maxA);
+        console.log(kmlFeatures)
+        alert(`共生成 ${kmlFeatures.length} 个子区，全部面积 ≤ ${maxA} m²`);
+
+
+      }
+
+      function downloadKML() {
+        console.log(kmlFeatures)
+        if (kmlFeatures.length === 0) return alert('请先分割！');
+        const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>PolygonSplitSafe</name>
+    ${kmlFeatures.join('\n')}
+  </Document>
+</kml>`;
+        const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'polygon_safe.kml';
+        a.click();
+        URL.revokeObjectURL(url);
+
+
+      }
+      if (flag == 0) {
+        splitPoly()
+      }
+      if (flag == 1) {
+        splitPoly()
+        downloadKML()
+      }
+    }
+
+  </script>
+</body>
+
+</html>
+</script>
